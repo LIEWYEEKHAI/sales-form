@@ -561,6 +561,8 @@ function submitForm() {
     document.getElementById('success-page').classList.add('active');
     document.querySelectorAll('.step-dot').forEach(d => d.className = 'step-dot done');
     document.getElementById('step-label').textContent = 'Berhasil dikirim ✓';
+    btn.classList.remove('loading');
+    btn.innerHTML = 'Kirim ✓';
     window.scrollTo(0,0);
   }).catch(() => {
     btn.classList.remove('loading');
