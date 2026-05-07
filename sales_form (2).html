@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Sales Record — Formulir Penjualan</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F4F0;
+    --surface: #FFFFFF;
+    --border: #E2E0D8;
+    --border-focus: #1A1A1A;
+    --text: #1A1A1A;
+    --text-muted: #888880;
+    --text-hint: #BBBBB0;
+    --accent: #1A1A1A;
+    --accent-light: #F0EFE8;
+    --success: #2D6A4F;
+    --success-bg: #D8F3DC;
+    --danger: #C1121F;
+    --danger-bg: #FFE8E8;
+    --tag-bg: #EEEEE8;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 20px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+  .header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+  .header p { font-size: 12px; color: var(--text-muted); }
+  .step-indicator {
+    display: flex; gap: 4px; align-items: center;
+  }
+  .step-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--border);
+    transition: background .2s;
+  }
+  .step-dot.active { background: var(--accent); }
+  .step-dot.done { background: var(--success); }
+
+  .page { display: none; padding: 20px; }
+  .page.active { display: block; }
+
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: .08em;
+    color: var(--text-muted); text-transform: uppercase;
+    margin: 0 0 12px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .field {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .field:last-child { border-bottom: none; }
+  .field label {
+    font-size: 11px; font-weight: 600; letter-spacing: .05em;
+    color: var(--text-muted); text-transform: uppercase;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .required-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--danger); display: inline-block;
+  }
+  .field input, .field select, .field textarea {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; color: var(--text);
+    background: transparent; border: none; outline: none;
+    width: 100%; padding: 0;
+    -webkit-appearance: none; appearance: none;
+  }
+  .field select { cursor: pointer; }
+  .field textarea { resize: none; min-height: 70px; line-height: 1.5; }
+  .field input::placeholder, .field textarea::placeholder { color: var(--text-hint); }
+  .field-hint { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+  .field.focused { background: #FAFAF8; }
+
+  .product-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+    animation: slideIn .2s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .product-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--accent-light);
+    border-bottom: 1px solid var(--border);
+  }
+  .product-num {
+    font-size: 11px; font-weight: 600; letter-spacing: .06em;
+    color: var(--text-muted); text-transform: uppercase;
+  }
+  .remove-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; color: var(--danger);
+    font-family: 'DM Sans', sans-serif;
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid var(--danger);
+    font-weight: 500;
+  }
+  .product-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  }
+  .product-grid .field { border-right: 1px solid var(--border); }
+  .product-grid .field:nth-child(even) { border-right: none; }
+  .product-grid .field:last-child, .product-grid .field:nth-last-child(2):nth-child(odd) {
+    border-bottom: none;
+  }
+  .subtotal-row {
+    padding: 8px 14px;
+    background: var(--tag-bg);
+    font-size: 12px; color: var(--text-muted);
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid var(--border);
+  }
+  .subtotal-val { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text); font-weight: 500; }
+
+  .add-btn {
+    width: 100%;
+    background: none;
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    font-size: 14px; font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all .15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-bottom: 20px;
+  }
+  .add-btn:active { background: var(--accent-light); }
+
+  .total-card {
+    background: var(--accent);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px;
+  }
+  .total-label { font-size: 13px; color: rgba(255,255,255,0.65); }
+  .total-val { font-family: 'DM Mono', monospace; font-size: 20px; color: #fff; font-weight: 500; }
+
+  .nav-btns { display: flex; gap: 10px; }
+  .btn-back {
+    flex: 1; padding: 14px; border-radius: var(--radius);
+    background: none; border: 1px solid var(--border);
+    font-size: 15px; font-weight: 500; color: var(--text);
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: background .15s;
+  }
+  .btn-back:active { background: var(--accent-light); }
+  .btn-next {
+    flex: 2; padding: 14px; border-radius: var(--radius);
+    background: var(--accent); border: none;
+    font-size: 15px; font-weight: 600; color: #fff;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: opacity .15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-next:active { opacity: .85; }
+  .btn-next.loading { opacity: .6; pointer-events: none; }
+
+  .success-page {
+    display: none; padding: 40px 20px;
+    text-align: center; flex-direction: column; align-items: center;
+  }
+  .success-page.active { display: flex; }
+  .success-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--success-bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; margin-bottom: 16px;
+  }
+  .success-page h2 { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+  .success-page p { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; line-height: 1.6; }
+
+  .summary-box {
+    width: 100%; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; margin-bottom: 20px; text-align: left;
+  }
+  .summary-box-header {
+    padding: 10px 16px; background: var(--accent-light);
+    font-size: 11px; font-weight: 600; letter-spacing: .06em;
+    color: var(--text-muted); text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+  .summary-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    font-size: 13px; gap: 12px;
+  }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-row-label { color: var(--text-muted); flex-shrink: 0; }
+  .summary-row-val { font-weight: 500; text-align: right; }
+  .summary-total {
+    display: flex; justify-content: space-between;
+    padding: 12px 16px; background: var(--accent);
+    font-size: 14px; font-weight: 600; color: #fff;
+  }
+  .summary-total span:last-child { font-family: 'DM Mono', monospace; }
+
+  .btn-new {
+    width: 100%; padding: 14px; border-radius: var(--radius);
+    background: none; border: 1px solid var(--border);
+    font-size: 15px; font-weight: 500; color: var(--text);
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+  }
+  .btn-new:active { background: var(--accent-light); }
+
+  .error-msg { font-size: 12px; color: var(--danger); margin-top: 4px; display: none; }
+  .field.error input, .field.error select { color: var(--danger); }
+  .field.error .error-msg { display: block; }
+
+  .category-pills {
+    display: flex; flex-wrap: wrap; gap: 6px; padding-top: 4px;
+  }
+  .pill {
+    padding: 5px 12px; border-radius: 20px;
+    border: 1px solid var(--border);
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    background: none; color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    transition: all .12s;
+  }
+  .pill.selected {
+    background: var(--accent); border-color: var(--accent);
+    color: #fff;
+  }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <h1>Sales Record</h1>
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot-1"></div>
+      <div class="step-dot" id="dot-2"></div>
+      <div class="step-dot" id="dot-3"></div>
+    </div>
+  </div>
+  <p id="step-label">Langkah 1 dari 3 — Informasi Pesanan</p>
+</div>
+
+<!-- PAGE 1: Order Info -->
+<div class="page active" id="page-1">
+  <p class="section-label">Informasi Pesanan / Order Info</p>
+  <div class="card">
+    <div class="field" id="f-salesperson">
+      <label><span class="required-dot"></span> Salesperson</label>
+      <select id="salesperson">
+        <option value="">Pilih salesperson...</option>
+        <option>Albert</option>
+        <option>Ali</option>
+        <option>Sales C</option>
+        <option>Sales D</option>
+      </select>
+      <span class="error-msg">Pilih salesperson</span>
+    </div>
+    <div class="field" id="f-date">
+      <label><span class="required-dot"></span> Date / Tanggal</label>
+      <input type="date" id="deal-date">
+      <span class="error-msg">Pilih tanggal</span>
+    </div>
+    <div class="field" id="f-customer">
+      <label><span class="required-dot"></span> Customer Name / Nama Pelanggan</label>
+      <input type="text" id="customer" placeholder="Nama toko / perusahaan...">
+      <span class="error-msg">Isi nama pelanggan</span>
+    </div>
+    <div class="field">
+      <label>Maps Link <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--text-hint)">(opsional)</span></label>
+      <input type="url" id="maps-link" placeholder="https://maps.app.goo.gl/...">
+    </div>
+    <div class="field">
+      <label>Order No. / No. Pesanan</label>
+      <input type="text" id="order-no" placeholder="Otomatis: tanggal+inisial" readonly style="color:var(--text-muted);font-family:'DM Mono',monospace;font-size:13px">
+      <span class="field-hint">Diisi otomatis berdasarkan tanggal & salesperson</span>
+    </div>
+  </div>
+  <div class="nav-btns">
+    <button class="btn-next" style="flex:1" onclick="goToPage2()">Lanjut — Tambah Produk →</button>
+  </div>
+</div>
+
+<!-- PAGE 2: Products -->
+<div class="page" id="page-2">
+  <p class="section-label">Produk / Products</p>
+  <div id="product-list"></div>
+  <button class="add-btn" onclick="addProduct()">
+    + Tambah Produk
+  </button>
+  <div class="total-card">
+    <span class="total-label">Total Estimasi</span>
+    <span class="total-val" id="grand-total">Rp 0</span>
+  </div>
+  <div class="nav-btns">
+    <button class="btn-back" onclick="goToPage(1)">← Kembali</button>
+    <button class="btn-next" onclick="goToPage3()">Review →</button>
+  </div>
+</div>
+
+<!-- PAGE 3: Review -->
+<div class="page" id="page-3">
+  <p class="section-label">Catatan / Notes</p>
+  <div class="card" style="margin-bottom:16px">
+    <div class="field">
+      <label>Notes / Catatan <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--text-hint)">(opsional)</span></label>
+      <textarea id="notes" placeholder="Syarat khusus, diskon, tindak lanjut..."></textarea>
+    </div>
+  </div>
+  <p class="section-label">Ringkasan / Summary</p>
+  <div class="summary-box" id="review-box"></div>
+  <div class="nav-btns" style="margin-top:16px">
+    <button class="btn-back" onclick="goToPage(2)">← Kembali</button>
+    <button class="btn-next" id="submit-btn" onclick="submitForm()">Kirim ✓</button>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div class="success-page" id="success-page">
+  <div class="success-icon">✓</div>
+  <h2>Berhasil Dikirim!</h2>
+  <p>Data telah tercatat.<br>Admin akan segera memproses invoice.</p>
+  <div class="summary-box" id="success-summary"></div>
+  <button class="btn-new" onclick="resetForm()">+ Catat Penjualan Baru</button>
+</div>
+
+<script>
+let productCount = 0;
+const CATS = ['Sparepart','Ban / Tire','Mesin / Machine','Kimia / Chemical','Aki / Battery','Lainnya / Other'];
+
+function updateOrderNo() {
+  const d = document.getElementById('deal-date').value;
+  const s = document.getElementById('salesperson').value;
+  if (d && s) {
+    const parts = d.split('-');
+    const dateStr = parts[0].slice(2) + parts[1] + parts[2];
+    const initials = s.replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase();
+    document.getElementById('order-no').value = dateStr + '-' + initials;
+  }
+}
+document.getElementById('deal-date').addEventListener('change', updateOrderNo);
+document.getElementById('salesperson').addEventListener('change', updateOrderNo);
+document.getElementById('deal-date').value = new Date().toISOString().split('T')[0];
+
+function addProduct() {
+  productCount++;
+  const id = productCount;
+  const div = document.createElement('div');
+  div.className = 'product-block';
+  div.id = 'prod-' + id;
+  div.innerHTML = `
+    <div class="product-header">
+      <span class="product-num">Produk #${id}</span>
+      ${id > 1 ? `<button class="remove-btn" onclick="removeProduct(${id})">Hapus</button>` : ''}
+    </div>
+    <div class="field" style="border-bottom:1px solid var(--border)">
+      <label><span class="required-dot"></span> Nama Produk / Spesifikasi</label>
+      <input type="text" id="pname-${id}" placeholder="Contoh: Aki NS60, Attarezzo 195/50R16..." oninput="calcTotal()">
+    </div>
+    <div style="padding:10px 14px 8px;border-bottom:1px solid var(--border)">
+      <label style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:8px">Kategori</label>
+      <div class="category-pills" id="pills-${id}">
+        ${CATS.map(c => `<button class="pill" onclick="selectPill(${id},'${c}',this)">${c}</button>`).join('')}
+      </div>
+      <input type="hidden" id="pcat-${id}">
+    </div>
+    <div class="product-grid">
+      <div class="field">
+        <label><span class="required-dot"></span> QTY</label>
+        <input type="number" id="pqty-${id}" min="1" value="" placeholder="0" oninput="calcTotal()" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Harga Satuan (IDR)</label>
+        <input type="number" id="pprice-${id}" min="0" placeholder="0" oninput="calcTotal()" inputmode="numeric">
+      </div>
+    </div>
+    <div class="subtotal-row">
+      <span>Subtotal</span>
+      <span class="subtotal-val" id="psub-${id}">Rp 0</span>
+    </div>
+  `;
+  document.getElementById('product-list').appendChild(div);
+  document.getElementById('pname-'+id).focus();
+  calcTotal();
+}
+
+function selectPill(id, cat, el) {
+  document.querySelectorAll(`#pills-${id} .pill`).forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('pcat-'+id).value = cat;
+}
+
+function removeProduct(id) {
+  document.getElementById('prod-'+id).remove();
+  calcTotal();
+}
+
+function calcTotal() {
+  let total = 0;
+  document.querySelectorAll('.product-block').forEach(b => {
+    const id = b.id.replace('prod-','');
+    const qty = parseFloat(document.getElementById('pqty-'+id)?.value)||0;
+    const price = parseFloat(document.getElementById('pprice-'+id)?.value)||0;
+    const sub = qty * price;
+    total += sub;
+    const el = document.getElementById('psub-'+id);
+    if (el) el.textContent = 'Rp ' + Math.round(sub).toLocaleString('id-ID');
+  });
+  document.getElementById('grand-total').textContent = 'Rp ' + Math.round(total).toLocaleString('id-ID');
+}
+
+function setStep(n) {
+  for (let i = 1; i <= 3; i++) {
+    const dot = document.getElementById('dot-'+i);
+    if (i < n) { dot.className = 'step-dot done'; }
+    else if (i === n) { dot.className = 'step-dot active'; }
+    else { dot.className = 'step-dot'; }
+  }
+  const labels = ['','Langkah 1 dari 3 — Informasi Pesanan','Langkah 2 dari 3 — Produk','Langkah 3 dari 3 — Review & Kirim'];
+  document.getElementById('step-label').textContent = labels[n];
+}
+
+function goToPage(n) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  setStep(n);
+  window.scrollTo(0,0);
+}
+
+function goToPage2() {
+  let ok = true;
+  ['salesperson','deal-date','customer'].forEach(id => {
+    const field = document.getElementById('f-'+id.replace('deal-',''));
+    const el = document.getElementById(id);
+    const fid = id === 'deal-date' ? 'f-date' : id === 'customer' ? 'f-customer' : 'f-salesperson';
+    const fEl = document.getElementById(fid);
+    if (!el.value) { fEl.classList.add('error'); ok = false; }
+    else { fEl.classList.remove('error'); }
+  });
+  if (!ok) return;
+  updateOrderNo();
+  if (document.querySelectorAll('.product-block').length === 0) addProduct();
+  goToPage(2);
+}
+
+function goToPage3() {
+  const blocks = document.querySelectorAll('.product-block');
+  if (blocks.length === 0) { alert('Tambahkan minimal 1 produk'); return; }
+  let ok = true;
+  blocks.forEach(b => {
+    const id = b.id.replace('prod-','');
+    if (!document.getElementById('pname-'+id).value) ok = false;
+    if (!document.getElementById('pqty-'+id).value) ok = false;
+  });
+  if (!ok) { alert('Lengkapi nama produk dan QTY untuk semua produk'); return; }
+  buildReview();
+  goToPage(3);
+}
+
+function buildReview() {
+  const sales = document.getElementById('salesperson').value;
+  const date = document.getElementById('deal-date').value;
+  const customer = document.getElementById('customer').value;
+  const orderNo = document.getElementById('order-no').value;
+  const maps = document.getElementById('maps-link').value;
+  let html = `
+    <div class="summary-row"><span class="summary-row-label">Salesperson</span><span class="summary-row-val">${sales}</span></div>
+    <div class="summary-row"><span class="summary-row-label">Tanggal</span><span class="summary-row-val">${date}</span></div>
+    <div class="summary-row"><span class="summary-row-label">Pelanggan</span><span class="summary-row-val">${customer}</span></div>
+    <div class="summary-row"><span class="summary-row-label">Order No.</span><span class="summary-row-val" style="font-family:'DM Mono',monospace;font-size:12px">${orderNo}</span></div>
+  `;
+  let total = 0;
+  document.querySelectorAll('.product-block').forEach((b,i) => {
+    const id = b.id.replace('prod-','');
+    const name = document.getElementById('pname-'+id).value;
+    const cat = document.getElementById('pcat-'+id).value;
+    const qty = parseInt(document.getElementById('pqty-'+id).value)||0;
+    const price = parseFloat(document.getElementById('pprice-'+id).value)||0;
+    const sub = qty * price;
+    total += sub;
+    html += `<div class="summary-row"><span class="summary-row-label">#${i+1} ${name}${cat?' · '+cat:''}</span><span class="summary-row-val">×${qty}${price?' = Rp '+Math.round(sub).toLocaleString('id-ID'):''}</span></div>`;
+  });
+  html += `<div class="summary-total"><span>Total Estimasi</span><span>Rp ${Math.round(total).toLocaleString('id-ID')}</span></div>`;
+  document.getElementById('review-box').innerHTML = html;
+}
+
+function submitForm() {
+  const btn = document.getElementById('submit-btn');
+  btn.classList.add('loading');
+  btn.innerHTML = '<div class="spinner"></div>';
+
+  // Collect data
+  const data = {
+    orderNo: document.getElementById('order-no').value,
+    salesperson: document.getElementById('salesperson').value,
+    date: document.getElementById('deal-date').value,
+    customer: document.getElementById('customer').value,
+    mapsLink: document.getElementById('maps-link').value,
+    notes: document.getElementById('notes').value,
+    products: []
+  };
+  document.querySelectorAll('.product-block').forEach(b => {
+    const id = b.id.replace('prod-','');
+    data.products.push({
+      name: document.getElementById('pname-'+id).value,
+      category: document.getElementById('pcat-'+id).value,
+      qty: document.getElementById('pqty-'+id).value,
+      unitPrice: document.getElementById('pprice-'+id).value
+    });
+  });
+
+  // TODO: Replace this URL with your Power Automate HTTP trigger URL
+  const WEBHOOK_URL = 'https://shoxashon.app.n8n.cloud/webhook-test/fb38c60c-f1d1-46a3-9a67-0bb54512f1aa';
+
+  fetch(WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(() => {
+    buildSuccessSummary(data);
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('success-page').classList.add('active');
+    document.querySelectorAll('.step-dot').forEach(d => d.className = 'step-dot done');
+    document.getElementById('step-label').textContent = 'Berhasil dikirim ✓';
+    window.scrollTo(0,0);
+  }).catch(() => {
+    btn.classList.remove('loading');
+    btn.innerHTML = 'Kirim ✓';
+    alert('Gagal mengirim. Coba lagi.');
+  });
+}
+
+function buildSuccessSummary(data) {
+  let total = data.products.reduce((a,p) => a + (parseInt(p.qty)||0)*(parseFloat(p.unitPrice)||0), 0);
+  let html = `
+    <div class="summary-box-header">Ringkasan Pesanan</div>
+    <div class="summary-row"><span class="summary-row-label">Order No.</span><span class="summary-row-val" style="font-family:'DM Mono',monospace;font-size:12px">${data.orderNo}</span></div>
+    <div class="summary-row"><span class="summary-row-label">Pelanggan</span><span class="summary-row-val">${data.customer}</span></div>
+  `;
+  data.products.forEach((p,i) => {
+    const sub = (parseInt(p.qty)||0)*(parseFloat(p.unitPrice)||0);
+    html += `<div class="summary-row"><span class="summary-row-label">#${i+1} ${p.name}</span><span class="summary-row-val">×${p.qty}${p.unitPrice?' = Rp '+Math.round(sub).toLocaleString('id-ID'):''}</span></div>`;
+  });
+  html += `<div class="summary-total"><span>Total Estimasi</span><span>Rp ${Math.round(total).toLocaleString('id-ID')}</span></div>`;
+  document.getElementById('success-summary').innerHTML = html;
+}
+
+function resetForm() {
+  document.getElementById('salesperson').value = '';
+  document.getElementById('deal-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('customer').value = '';
+  document.getElementById('maps-link').value = '';
+  document.getElementById('order-no').value = '';
+  document.getElementById('notes').value = '';
+  document.getElementById('product-list').innerHTML = '';
+  productCount = 0;
+  document.getElementById('grand-total').textContent = 'Rp 0';
+  document.getElementById('success-page').classList.remove('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-1').classList.add('active');
+  setStep(1);
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
